@@ -1,0 +1,39 @@
+---
+resources:
+- name: python-buildpack-repo
+  type: git
+  source:
+    #uri: https://github.com/concourse/flight-school.git
+    #uri: https://github.com/95rade/flight-school.git
+    uri: https://github.com/95rade/python-buildpack.git
+    branch: master
+
+jobs:
+- name: run-python-buildpack
+  plan:
+  - get: python-buildpack-repo
+  - task: run-tests
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          #repository: ubuntu
+          #repository: ruby
+          repository: python
+      inputs:
+      - name: python-buildpack-repo
+      #- name: sample-python-flask-app-boshrelease
+      run:
+        path: /bin/bash
+        args:
+        - -c
+        - |
+          uname -a
+          pwd
+          ls -ltr
+          cd python-buildpack-repo
+          ls -ltr
+          which python
+          cd fixtures/avisa
+          pip install --download vendor -r requirements.txt --no-binary :all:

@@ -1,1 +1,69 @@
+---
+resources:
+- name: python-buildpack
+  type: git
+  source:
+    uri: https://github.com/95rade/python-buildpack
+    branch: master
 
+- name: python-buildpack-docker-image
+  type: docker-image
+  source:
+    repository: rade95/python-buildpack-example
+    username: {{dockerhub-username}}
+    password: {{dockerhub-password}}
+
+jobs:
+- name: build-cached-image
+  plan:
+  - get: python-buildpack
+  - task: build-cached-image-workspace
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          #repository: ubuntu
+          repository: python
+      outputs:
+      - name: workspace
+
+      inputs:
+      - name: python-buildpack
+
+      run:
+        path: /bin/bash
+        args:
+        - -c
+        - |
+          pwd
+          ls -ltr
+          output_dir=workspace
+          cat << EOF > "${output_dir}/Dockerfile
+
+  - put: python-buildpack-docker-image
+    params:
+      build: workspace
+
+- name: test-it!
+  plan:
+  - get: python-buildpackl-docker-image
+    passed: [build-cached-image]
+    trigger: true
+  - get: python-buildpack
+    passed: [build-cached-image]
+  - task: run-tests
+    image: python-buildpack-docker-image
+    config:
+      platform: linux
+      inputs:
+      - name: python-buildpack
+      run:
+        path: ./python-buildpack/ci/test.sh
+        #path: ci/test.sh
+      #run:
+      #  dir: flight-school
+      #  path: bundle
+      #  args:
+      #  - exec
+      #  - rspec
